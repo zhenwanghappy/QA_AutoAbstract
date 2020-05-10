@@ -14,6 +14,9 @@ import pandas as pd
 import src.config as config
 import jieba
 
+"""
+    清洗数据：去除停用词，去除空行
+"""
 
 def parse_clean(train_path, test_path):
     train_set = pd.read_csv(train_path, encoding="utf-8")
