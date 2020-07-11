@@ -284,12 +284,12 @@ def batch_generator(generator, vocab, train_x_path, train_y_path,
 
 
 def batcher(vocab):
+    dataset = batch_generator(example_generator, vocab, config.min_x_path, config.min_y_path,
+                              config.test_x_path, config.max_enc_len,
+                              config.max_dec_len, config.batch_sz, config.mode)
     # dataset = batch_generator(example_generator, vocab, config.train_x_path, config.train_y_path,
     #                           config.test_x_path, config.max_enc_len,
     #                           config.max_dec_len, config.batch_sz, config.mode)
-    dataset = batch_generator(example_generator, vocab, config.train_x_path, config.train_y_path,
-                              config.test_x_path, config.max_enc_len,
-                              config.max_dec_len, config.batch_sz, config.mode)
     return dataset
 
 
