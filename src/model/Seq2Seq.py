@@ -65,7 +65,7 @@ class Seq2Seq(keras.Model):
             # 都是在某个维度上对矩阵(向量）进行拼接，
             # 不同点在于前者拼接后的矩阵维度不变，后者则会增加一个维度。
             # tf.stack(predictions, 1).shape [batch_sz, max_dec_len-1, vocab_size]
-        return tf.stack(predictions, 1), dec_hidden
+        return tf.stack(predictions, 1), [dec_hidden]
 
 
 # def train_step(enc_inp, dec_tar, pad_index):

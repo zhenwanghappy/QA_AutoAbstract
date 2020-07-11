@@ -3,11 +3,11 @@ from src.model.Seq2Seq import Seq2Seq
 from src.util.batch_utils import  batcher, Vocab
 from src.util.train_helper import train_model
 from src import config
+from src.model.pgn import PGN
 
 def train():
     global checkpoint_dir, ckpt, model
     assert config.mode.lower() == "train"
-
     vocab = Vocab(config.word2index_path, config.vocab_size)
     print('true vocab is ', vocab)
 
@@ -16,6 +16,8 @@ def train():
     print("Building the model ...")
     if config.model == "SequenceToSequence":
         model = Seq2Seq()
+    elif config.model == "PGN":
+        model = PGN()
     # elif params["model"] == "PGN":
     #     model = PGN(params)
 
@@ -23,11 +25,15 @@ def train():
     if config.model == "SequenceToSequence":
         checkpoint_dir = "{}/checkpoint".format(config.seq2seq_model_dir)
         ckpt = tf.train.Checkpoint(step=tf.Variable(0), SequenceToSequence=model)
+    elif config.model == "PGN":
+        checkpoint_dir = "{}/checkpoint".format(config.pgn_model_dir)
+        print(checkpoint_dir)
+        ckpt = tf.train.Checkpoint(step=tf.Variable(0), PointerGeneratorModel=model)
     # elif params["model"] == "PGN":
     #     checkpoint_dir = "{}/checkpoint".format(params["pgn_model_dir"])
     #     ckpt = tf.train.Checkpoint(step=tf.Variable(0), PGN=model)
-    ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_dir, max_to_keep=3)
 
+    ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_dir, max_to_keep=3)
     ckpt.restore(ckpt_manager.latest_checkpoint)
     if ckpt_manager.latest_checkpoint:
         print("Restored from {}".format(ckpt_manager.latest_checkpoint))

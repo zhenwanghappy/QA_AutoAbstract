@@ -16,13 +16,13 @@ class Encoder(keras.models.Model):
                                     return_sequences=True,
                                     return_state=True,
                                     recurrent_initializer='glorot_uniform')
-        self.bi_gru = keras.layers.Bidirectional(self.gru)
+        if self.use_bi_gru:
+            self.bi_gru = keras.layers.Bidirectional(self.gru)
 
     def call(self, enc_input):
         # (batch_size, enc_len, embedding_dim)
         enc_input_embedded = self.embedding(enc_input)
         initial_state = self.gru.get_initial_state(enc_input_embedded)
-
         if self.use_bi_gru:
             # 是否使用双向GRU
             output, forward_state, backward_state = self.bi_gru(enc_input_embedded, initial_state=initial_state * 2)
@@ -31,7 +31,6 @@ class Encoder(keras.models.Model):
         else:
             # 单向GRU
             output, enc_hidden = self.gru(enc_input_embedded, initial_state=initial_state)
-
         return output, enc_hidden
 
     def initialize_hidden_state(self):
@@ -46,3 +45,4 @@ if __name__ == '__main__':
                                batch_sz = config.batch_sz)
     encoder.embedding(tf.range(10))
     print(encoder.embedding.embeddings[0])
+    encoder(tf.reshape(tf.range(150),(3,50)))

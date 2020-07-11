@@ -3,12 +3,9 @@ from src.preprocess import index_word
 from src.preprocess import word2vec_build
 from src import config
 from src.util import build_embbedingmatrix
-from src.util import batch_utils
-from src.model import Seq2Seq
-from src.util import train_helper
-from src.util import test_helper
 from src import testing
 from src import training
+import tensorflow as  tf
 
 def preprocess():
     print(config.trainset_path)
@@ -19,9 +16,13 @@ def preprocess():
     embbeding = build_embbedingmatrix.load_pkl(config.embbeding_matrix_path)
 
 if __name__ == '__main__':
-    preprocess()
-    # if config.mode == "train":
-    #     training.train()
-    # elif config.mode == "test":
-    #     testing.test_and_save()
+    # preprocess()
+    gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
+    if gpus:
+        tf.config.experimental.set_visible_devices(devices=gpus[0], device_type='GPU')
+
+    if config.mode == "train":
+        training.train()
+    elif config.mode == "test":
+        testing.test_and_save()
 

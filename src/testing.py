@@ -1,5 +1,6 @@
 import tensorflow as tf
 from src.model.Seq2Seq import Seq2Seq
+from src.model.pgn import PGN
 from src.util.batch_utils import Vocab, batcher
 from src.util.test_helper import batch_greedy_decode
 from tqdm import tqdm
@@ -15,6 +16,8 @@ def test():
     print("Building the model ...")
     if config.model == "SequenceToSequence":
         model = Seq2Seq()
+    elif config.model == "PGN":
+        model = PGN()
     print("Creating the vocab ...")
     vocab = batch_utils.Vocab(config.word2index_path, config.vocab_size)
 
@@ -22,12 +25,15 @@ def test():
     b = batcher(vocab)
 
     print("Creating the checkpoint manager")
-    # if config.model == "SequenceToSequence":
-    #     checkpoint_dir = "{}/checkpoint".format(config.seq2seq_model_dir)
-    #     ckpt = tf.train.Checkpoint(step=tf.Variable(0), SequenceToSequence=model)
-    # ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_dir, max_to_keep=3)
-    #
-    # ckpt.restore(ckpt_manager.latest_checkpoint)
+    if config.model == "SequenceToSequence":
+        checkpoint_dir = "{}/checkpoint".format(config.seq2seq_model_dir)
+        ckpt = tf.train.Checkpoint(step=tf.Variable(0), SequenceToSequence=model)
+    elif config.model == "PGN":
+        checkpoint_dir = "{}/checkpoint".format(config.pgn_model_dir)
+        ckpt = tf.train.Checkpoint(step=tf.Variable(0), PointerGeneratorModel=model)
+    ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_dir, max_to_keep=3)
+
+    ckpt.restore(ckpt_manager.latest_checkpoint)
     print("Model restored")
     for batch in b:
         yield batch_greedy_decode(model, batch, vocab, config.max_dec_len)
@@ -49,7 +55,9 @@ def test_and_save():
 
 def save_predict_result(results):
     # 读取结果
+    # test_df = pd.read_csv(config.testset_path)
     test_df = pd.read_csv(config.min_t_x_csv_path)
+    print(test_df.shape, len(results))
     # 填充结果
     test_df['Prediction'] = results
     # 　提取ID和预测结果两列

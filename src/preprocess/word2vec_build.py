@@ -23,8 +23,8 @@ def load_word2vec(w2v_bin_path):
 
 
 if __name__ == "__main__":
-    build_word2vec(config.sentences_path, config.w2v_bin_path)
+    # build_word2vec(config.sentences_path, config.w2v_bin_path)
     w2v = load_word2vec(config.w2v_bin_path)
     print(len(w2v.wv.vocab))
-    print(w2v.most_similar("美女"))
+    print(w2v.most_similar("维修"))
 

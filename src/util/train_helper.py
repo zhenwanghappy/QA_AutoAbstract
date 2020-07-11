@@ -1,6 +1,7 @@
 import tensorflow as tf
 import time
 from src.model.losses import loss_function
+from src.model.losses import pgn_loss
 import  numpy as np
 from src import config
 
@@ -9,8 +10,9 @@ def train_model(model, dataset, ckpt_manager, vocab):
     pad_index = vocab.word_to_id('[PAD]')
 
     optimizer = tf.keras.optimizers.Adam(name='Adam', learning_rate=config.learning_rate)
+
     # @tf.function()
-    def train_step(enc_inp, dec_tar,pad_index):
+    def train_step(enc_inp, dec_tar,pad_index, _enc_extended_inp, enc_mask=None, dec_mask=None, batch_oov_len=None):
         with tf.GradientTape() as tape:
             # print('enc_inp shape is final for model :', enc_inp.get_shape())
             enc_output, enc_hidden = model.encoder(enc_inp)
@@ -20,12 +22,22 @@ def train_model(model, dataset, ckpt_manager, vocab):
             dec_input = tf.expand_dims([start_index] * config.batch_sz, 1)
             dec_hidden = enc_hidden
             # print(dec_tar)
-            predictions, _ = model(dec_input, dec_hidden, enc_output, dec_tar)
-            loss = loss_function(dec_tar[:,0:],
-                                 predictions,pad_index)
-
+            if config.model == "SequenceToSequence":
+                predictions, _ = model(dec_input, dec_hidden, enc_output, dec_tar)
+            elif config.model == "PGN":
+                predictions, _ = model(dec_input, dec_hidden, enc_output, dec_tar, _enc_extended_inp, enc_mask, batch_oov_len)          #error
+            if config.model == "SequenceToSequence":
+                loss = pgn_loss(dec_tar[:,0:],
+                                 predictions, dec_mask)
+            elif config.model == "PGN":
+                loss = pgn_loss(dec_tar[:, 0:],
+                                     predictions, dec_mask)
         variables = model.trainable_variables
         gradients = tape.gradient(loss, variables)
+        if config.gradient_clip:
+            gradients, _ = tf.clip_by_global_norm(gradients, 1)
+            if _ >= 1:
+                print(_)
         optimizer.apply_gradients(zip(gradients, variables))
         return loss
 
@@ -37,7 +49,12 @@ def train_model(model, dataset, ckpt_manager, vocab):
         for step, batch in enumerate(dataset.take(config.steps_per_epoch)):
             #讲设你的样本数是1000，batch size10,一个epoch，我们一共有100次，200， 500， 40，20.
             batch_loss = train_step(batch[0]["enc_input"],  # shape=(16, 200)
-                              batch[1]["dec_input"], pad_index)  # shape=(16, 50),去除不带oov的摘要
+                                batch[1]["dec_target"],
+                                pad_index,
+                                batch[0]["extended_enc_input"],
+                                batch[0]['sample_encoder_pad_mask'],
+                                batch[1]['sample_decoder_pad_mask'],
+                                batch[0]['max_oov_len'])  # shape=(16, 50),去除不带oov的摘要
             total_loss += batch_loss
             step += 1
             if step % 100 == 0:

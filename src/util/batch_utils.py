@@ -111,7 +111,7 @@ def example_generator(vocab, train_x_path, train_y_path, test_x_path, max_enc_le
         dataset_train_x = tf.data.TextLineDataset(train_x_path)
         dataset_train_y = tf.data.TextLineDataset(train_y_path)
         train_dataset = tf.data.Dataset.zip((dataset_train_x, dataset_train_y))
-        train_dataset = train_dataset.shuffle(16, reshuffle_each_iteration=True).repeat()
+        train_dataset = train_dataset.shuffle(1000, reshuffle_each_iteration=True).repeat()
         # i = 0
         for raw_record in train_dataset:
             article = raw_record[0].numpy().decode("utf-8")
@@ -125,7 +125,8 @@ def example_generator(vocab, train_x_path, train_y_path, test_x_path, max_enc_le
             # print('enc_inp shape is final for dataset:',enc_len)
             # 添加mark标记
             # print('enc_len is', enc_len)
-            sample_encoder_pad_mask = [1 for _ in range(enc_len)]
+            sample_encoder_pad_mask = [0.] * max_enc_len
+            sample_encoder_pad_mask[:enc_len] = [1.]*enc_len
             # print('sample_encoder_pad_mask is', sample_encoder_pad_mask)
 
             enc_input = [vocab.word_to_id(w) for w in article_words]
@@ -137,22 +138,23 @@ def example_generator(vocab, train_x_path, train_y_path, test_x_path, max_enc_le
             abs_ids = [vocab.word_to_id(w) for w in abstract_words]
             abs_ids_extend_vocab = abstract_to_ids(abstract_words, vocab, article_oovs)
             dec_input, target = get_dec_inp_targ_seqs(abs_ids, max_dec_len, start_decoding, stop_decoding)
-            _, target = get_dec_inp_targ_seqs(abs_ids_extend_vocab, max_dec_len, start_decoding, stop_decoding)
+            if config.model == "pgn":
+                dec_input, target = get_dec_inp_targ_seqs(abs_ids_extend_vocab, max_dec_len, start_decoding, stop_decoding)
 
             dec_len = len(dec_input)
             # 添加mark标记
             # print('dec_len ids ', dec_len)
-            sample_decoder_pad_mask = [1 for _ in range(dec_len)]
+            sample_decoder_pad_mask = [0.] * max_dec_len
+            sample_decoder_pad_mask[:dec_len] = [1.] * dec_len
             # print('sample_decoder_pad_mask is ', sample_decoder_pad_mask)
-
             output = {
-                "enc_len": enc_len,
+                "enc_len": enc_len,                                        # min{摘要长度, max_enc_len}
                 "enc_input": enc_input,                                    # 不带有oov的文章，oov用<unk>表示
                 "enc_input_extend_vocab": enc_input_extend_vocab,          # 具有oov的文章
                 "article_oovs": article_oovs,                              # 文章的oov列表
-                "dec_input": dec_input,                                    # 不帶oov的摘要句子，oov用<unk>表示
-                "target": target,                                          # 具有oov的摘要句子
-                "dec_len": dec_len,
+                "dec_input": dec_input,                                    # seq2seq中不帶oov的摘要句子/pgn中是带有oov的句子,以<start>开始
+                "target": target,                                          # 在seq2seq中是没有oov的摘要句子/pgn中是带有oov的摘要句子，以<end>结尾
+                "dec_len": dec_len,                                        # min{摘要长度+1, max_dec_len}
                 "article": article,
                 "abstract": abstract,
                 "abstract_sents": abstract_sentences,
@@ -217,8 +219,8 @@ def batch_generator(generator, vocab, train_x_path, train_y_path,
                                                  "article": tf.string,
                                                  "abstract": tf.string,
                                                  "abstract_sents": tf.string,
-                                                 "sample_decoder_pad_mask": tf.int32,
-                                                 "sample_encoder_pad_mask": tf.int32,
+                                                 "sample_decoder_pad_mask": tf.float32,
+                                                 "sample_encoder_pad_mask": tf.float32,
                                              },
                                              output_shapes={
                                                  "enc_len": [],
@@ -247,7 +249,7 @@ def batch_generator(generator, vocab, train_x_path, train_y_path,
                                                    "abstract": [],
                                                    "abstract_sents": [None],
                                                    "sample_decoder_pad_mask": [max_dec_len],
-                                                   "sample_encoder_pad_mask": [None]}),
+                                                   "sample_encoder_pad_mask": [max_enc_len]}),
                                    padding_values={"enc_len": -1,
                                                    "enc_input": 1,
                                                    "enc_input_extend_vocab": 1,
@@ -258,8 +260,8 @@ def batch_generator(generator, vocab, train_x_path, train_y_path,
                                                    "article": b'',
                                                    "abstract": b'',
                                                    "abstract_sents": b'',
-                                                   "sample_decoder_pad_mask": 0,
-                                                   "sample_encoder_pad_mask": 0},
+                                                   "sample_decoder_pad_mask": 0.,
+                                                   "sample_encoder_pad_mask": 0.},
                                    drop_remainder=True)
 
     def update(entry):
@@ -282,8 +284,11 @@ def batch_generator(generator, vocab, train_x_path, train_y_path,
 
 
 def batcher(vocab):
-    dataset = batch_generator(example_generator, vocab, config.min_x_path, config.min_y_path,
-                              config.min_t_x_path, config.max_enc_len,
+    # dataset = batch_generator(example_generator, vocab, config.train_x_path, config.train_y_path,
+    #                           config.test_x_path, config.max_enc_len,
+    #                           config.max_dec_len, config.batch_sz, config.mode)
+    dataset = batch_generator(example_generator, vocab, config.train_x_path, config.train_y_path,
+                              config.test_x_path, config.max_enc_len,
                               config.max_dec_len, config.batch_sz, config.mode)
     return dataset
 
