@@ -92,12 +92,14 @@ def batch_greedy_decode(model, enc_data, vocab, max_dec_len):
                                          config.vocab_size,
                                          config.batch_sz)
             final_dist = tf.squeeze(final_dist, 1)
+            # print(final_dist)
             predicted_ids = tf.argmax(final_dist, axis=1).numpy()
-            for index, predicted_id in enumerate(predicted_ids):
+            for index, predicted_id_and_oov in enumerate(zip(predicted_ids, enc_data[0]['article_oovs'])):
+                predicted_id, oovs = predicted_id_and_oov[0], predicted_id_and_oov[1]
                 if predicted_id < config.vocab_size:
                     predicts[index] += vocab.id_to_word(predicted_id) + ' '
                 else:
-                    predicts[index] += enc_data[0]['article_oovs'][predicted_id-config.vocab_size]+" "
+                    predicts[index] += oovs[predicted_id-config.vocab_size].numpy().decode()+" "
             # dec_input = tf.expand_dims(predicted_ids, 1)
             context_vector, attn, prev_coverage = model.attention(dec_hidden, enc_output, enc_mask, prev_coverage, True)
             dec_input = tf.expand_dims(predicted_ids, 1)

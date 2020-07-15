@@ -94,11 +94,11 @@ class PGN(keras.Model):
         _vocab_dists_pgn = vocab_dists * p_gens
         # 根据oov表的长度补齐原词表
         # _extra_zeros (batch_size, dec_len, batch_oov_len)
-        if batch_oov_len != 0:
-            _extra_zeros = tf.zeros((batch_size, p_gens.shape[1], batch_oov_len))
-            # 拼接后公式的左半部分完成了
-            # _vocab_dists_extended (batch_size, dec_len, vocab_size+batch_oov_len)
-            _vocab_dists_extended = tf.concat([_vocab_dists_pgn, _extra_zeros], axis=-1)
+        # if batch_oov_len != 0:
+        _extra_zeros = tf.zeros((batch_size, p_gens.shape[1], batch_oov_len))
+        # 拼接后公式的左半部分完成了
+        # _vocab_dists_extended (batch_size, dec_len, vocab_size+batch_oov_len)
+        _vocab_dists_extended = tf.concat([_vocab_dists_pgn, _extra_zeros], axis=-1)
 
         # 公式右半部分
         # _attn_dists_pgn (batch_size, dec_len, enc_len)
@@ -150,7 +150,7 @@ class PGN(keras.Model):
         # 至此完成了公式的右半边
         # 计算最终分布
         final_dists = _vocab_dists_extended + attn_dists_projected
-
+        # print("final_dists", final_dists.shape)
         return final_dists
 
 
@@ -173,6 +173,7 @@ if __name__ == '__main__':
     p_gens = tf.Variable([[[0.8], [0.6], [0.5]], [[0.7], [0.8], [0.6]]])
     batch_oov_len = 2
     model = PGN()
-    model._calc_final_dist(_enc_batch_extend_vocab, vocab_dists, attn_dists, p_gens, batch_oov_len, vocab_size=8,
+    final_dist = model._calc_final_dist(_enc_batch_extend_vocab, vocab_dists, attn_dists, p_gens, batch_oov_len, vocab_size=8,
                            batch_size=2)
+    print(final_dist.shape)
 

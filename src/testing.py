@@ -63,7 +63,7 @@ def save_predict_result(results):
     # 　提取ID和预测结果两列
     test_df = test_df[['QID', 'Prediction']]
     # 保存结果.
-    test_df.to_csv(config.results_path, index=None, sep=',')
+    test_df.to_csv(config.results_path, index=None, sep=',', encoding='utf-8')
 
 if __name__ == '__main__':
     test_and_save()

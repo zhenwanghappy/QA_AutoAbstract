@@ -1,4 +1,5 @@
 # question and answer summary and reasoning
+比赛地址：https://aistudio.baidu.com/aistudio/competition/detail/3
 (一)数据集：
 训练集（82943条记录）建立模型，基于汽车品牌、车系、问题内容与问答对话的文本，输出建议报告文本。
 测试集（20000条记录）使用训练好的模型，输出建议报告的结果文件。

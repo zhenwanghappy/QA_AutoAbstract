@@ -138,8 +138,8 @@ def example_generator(vocab, train_x_path, train_y_path, test_x_path, max_enc_le
             abs_ids = [vocab.word_to_id(w) for w in abstract_words]
             abs_ids_extend_vocab = abstract_to_ids(abstract_words, vocab, article_oovs)
             dec_input, target = get_dec_inp_targ_seqs(abs_ids, max_dec_len, start_decoding, stop_decoding)
-            if config.model == "pgn":
-                dec_input, target = get_dec_inp_targ_seqs(abs_ids_extend_vocab, max_dec_len, start_decoding, stop_decoding)
+            # if config.model == "PGN":
+            #    dec_input, target = get_dec_inp_targ_seqs(abs_ids_extend_vocab, max_dec_len, start_decoding, stop_decoding)
 
             dec_len = len(dec_input)
             # 添加mark标记
@@ -314,6 +314,11 @@ def output_to_words(id_list, vocab, article_oovs):
 
 if __name__ == '__main__':
     vocab = Vocab(config.word2index_path, 3000)
+    print(vocab[0])
+    from src.util.build_embbedingmatrix import load_embbedding
+    embbeding = load_embbedding(config.embbeding_matrix_path)
+    print(embbeding[0])
+
     # print("fuckyou", article_to_ids("阿卡麗 你好 师傅 银河系 火星文".split()[:10], vocab))
     # print([vocab.word_to_id(w) for w in "阿卡麗 你好 师傅 银河系 火星文".split()[:10]])
     # a, b = article_to_ids(["阿卡麗", "你好",'师傅',"银河系","火星文"], vocab)

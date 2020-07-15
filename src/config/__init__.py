@@ -43,7 +43,7 @@ learning_rate = 0.01
 mode = "train"
 # model = "SequenceToSequence"
 model = "PGN"
-num_to_test = 20
+num_to_test = 10
 
 seq2seq_model_dir = parentpath+"/ckpt/m_seq2seq"
 pgn_model_dir = parentpath+"/ckpt/pgn"

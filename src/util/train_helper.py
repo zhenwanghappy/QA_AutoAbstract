@@ -48,6 +48,7 @@ def train_model(model, dataset, ckpt_manager, vocab):
         # print(len(dataset.take(params['steps_per_epoch'])))
         for step, batch in enumerate(dataset.take(config.steps_per_epoch)):
             #讲设你的样本数是1000，batch size10,一个epoch，我们一共有100次，200， 500， 40，20.
+            # print("mask",batch[0]["sample_encoder_pad_mask"])
             batch_loss = train_step(batch[0]["enc_input"],  # shape=(16, 200)
                                 batch[1]["dec_target"],
                                 pad_index,
